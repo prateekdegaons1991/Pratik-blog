@@ -1,5 +1,5 @@
+import smtplib
 from functools import wraps
-
 import sqlalchemy.exc
 from flask import Flask, render_template, redirect, url_for, request, jsonify, flash
 from flask_bootstrap import Bootstrap
@@ -12,9 +12,16 @@ from flask_ckeditor import CKEditor, CKEditorField
 import datetime
 from forms import RegisterForm, CreatePostForm, Login, CommentsForm
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
+import json
+
+import json
+
+with open("config.json") as c:
+    param = json.load(c)["params"]
+
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+app.config['SECRET_KEY'] = param['SECRET_KEY']
 ckeditor = CKEditor(app)
 Bootstrap(app)
 
@@ -44,7 +51,7 @@ def load_user(user_id):
 
 
 # CONNECT TO DB
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///posts.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = param['DATABASE_URI']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -53,18 +60,15 @@ db = SQLAlchemy(app)
 class BlogPost(db.Model):
     __tablename__ = "blog_posts"
     id = db.Column(db.Integer, primary_key=True)
-
     # Create Foreign Key, "users.id" the users refers to the tablename of User.
     author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     # Create reference to the User object, the "posts" refers to the posts property in the User class.
     author = relationship("User", back_populates="posts")
-
     title = db.Column(db.String(250), unique=True, nullable=False)
     subtitle = db.Column(db.String(250), nullable=False)
     date = db.Column(db.String(250), nullable=False)
     body = db.Column(db.Text, nullable=False)
     img_url = db.Column(db.String(250), nullable=False)
-
     comments = relationship("Comment", back_populates="parent_post")
 
 
@@ -75,7 +79,6 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(100))
     name = db.Column(db.String(100))
-
     # This will act like a List of BlogPost objects attached to each User.
     # The "author" refers to the author property in the BlogPost class.
     posts = relationship("BlogPost", back_populates="author")
@@ -91,7 +94,6 @@ class Comment(db.Model):
     text = db.Column(db.Text, nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     comment_author = relationship("User", back_populates="comments")
-
     # ***************Child Relationship*************#
     post_id = db.Column(db.Integer, db.ForeignKey("blog_posts.id"))
     parent_post = relationship("BlogPost", back_populates="comments")
@@ -104,7 +106,8 @@ db.create_all()
 @app.route('/')
 @login_required
 def get_all_posts():
-    return render_template("index.html", all_posts=BlogPost.query.order_by(BlogPost.date))
+    return render_template("index.html", all_posts=BlogPost.query.order_by(BlogPost.date),
+                           date=datetime.date.today().year)
 
 
 @app.route("/post/<int:index>", methods=['POST', 'GET'])
@@ -117,13 +120,11 @@ def show_post(index):
             text=form.comment.data,
             comment_author=current_user,
             parent_post=requested_post
-
         )
         db.session.add(new_comment)
         db.session.commit()
         return redirect(url_for('show_post', index=index))
-
-    return render_template("post.html", post=requested_post, form=form)
+    return render_template("post.html", post=requested_post, form=form, date=datetime.date.today().year)
 
 
 @app.route('/create_post', methods=['POST', 'GET'])
@@ -138,15 +139,12 @@ def create_new_post():
             img_url=form.img_url.data,
             body=form.body.data,
             date=datetime.date.today(
-
             )
         )
-
         db.session.add(new_post)
         db.session.commit()
         return redirect(url_for('get_all_posts'))
-
-    return render_template("make-post.html", form=form)
+    return render_template("make-post.html", form=form, date=datetime.date.today().year)
 
 
 @app.route("/edit/<int:post_id>", methods=['POST', 'GET'])
@@ -161,7 +159,7 @@ def edit_post(post_id):
         post.body = form.body.data
         db.session.commit()
         return redirect(url_for('get_all_posts'))
-    return render_template("make-post.html", form=form, is_edit=True)
+    return render_template("make-post.html", form=form, is_edit=True, date=datetime.date.today().year)
 
 
 @app.route('/delete/<int:post_id>')
@@ -170,19 +168,44 @@ def delete_post(post_id):
     post_to_delete = BlogPost.query.get(post_id)
     db.session.delete(post_to_delete)
     db.session.commit()
-
     return redirect(url_for('get_all_posts'))
 
 
 @app.route("/about")
 def about():
-    return render_template("about.html")
+    return render_template("about.html", date=datetime.date.today().year)
 
 
-@app.route("/contact")
+@app.route("/contact", methods=['POST', 'GET'])
 @login_required
 def contact():
-    return render_template("contact.html")
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        message = request.form.get('message')
+        phone = request.form.get('phone')
+
+        # Send Mail
+        try:
+            # SMTP Connection Creation
+            connection = smtplib.SMTP("smtp.gmail.com")
+            connection.starttls()
+            connection.login(
+                user=param['user_email'],
+                password=param['user_email_pass']
+            )
+            connection.sendmail(from_addr=param['user_email'],
+                                to_addrs=param['user_email'],
+                                msg=f"Subject:Mail From {name}:{email} \n\n{message}\nphone:{phone}")
+            connection.close()
+        except (smtplib.SMTPException, smtplib.SMTPAuthenticationError, smtplib.SMTPConnectError,
+                smtplib.SMTPSenderRefused) as e:
+            print(e)
+            return redirect(url_for('contact'))
+        else:
+            return redirect(url_for('thank_you'))
+    else:
+        return render_template("contact.html", date=datetime.date.today().year)
 
 
 @app.route('/register', methods=['POST', 'GET'])
@@ -198,17 +221,30 @@ def register():
             email=request.form.get("email"),
             password=hashed_password
         )
-
         try:
             db.session.add(new_user)
             db.session.commit()
-            # login_user(new_user)
-        except sqlalchemy.exc.IntegrityError:
+            # Send Mail
+            # SMTP Connection Creation
+            connection = smtplib.SMTP("smtp.gmail.com")
+            connection.starttls()
+            connection.login(
+                user=param['user_email'],
+                password=param['user_email_pass']
+            )
+            connection.sendmail(from_addr=param['user_email'],
+                                to_addrs=param['user_email'],
+                                msg=f"Subject:User {new_user.name} Registered!! \n\n"
+                                    f"Name:{new_user.name}"
+                                    f"Email ID: {new_user.email}")
+            connection.close()
+        except (smtplib.SMTPException, smtplib.SMTPAuthenticationError, smtplib.SMTPConnectError,
+                smtplib.SMTPSenderRefused, sqlalchemy.exc.IntegrityError) as e:
             flash("Email Id already registered. Login Instead!")
             return redirect(url_for('login'))
         else:
             return redirect(url_for('login'))
-    return render_template("register.html", form=form)
+    return render_template("register.html", form=form, date=datetime.date.today().year)
 
 
 @app.route('/login', methods=['POST', 'GET'])
@@ -228,8 +264,13 @@ def login():
         else:
             login_user(user)
             return redirect(url_for('get_all_posts'))
+    return render_template("login.html", form=form, date=datetime.date.today().year)
 
-    return render_template("login.html", form=form)
+
+@app.route('/thankyou')
+@login_required
+def thank_you():
+    return render_template("thankyou.html", date=datetime.date.today().year)
 
 
 @app.route("/logout")
