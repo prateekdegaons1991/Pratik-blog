@@ -233,7 +233,7 @@ def register():
                 password=param['user_email_pass']
             )
             connection.sendmail(from_addr=param['user_email'],
-                                to_addrs=param['recipient_mail'],
+                                to_addrs=param['user_email'],
                                 msg=f"Subject:User {new_user.name} Registered!! \n\n"
                                     f"Name:{new_user.name}"
                                     f"Email ID: {new_user.email}")
