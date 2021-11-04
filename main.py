@@ -188,7 +188,7 @@ def contact():
         # Send Mail
         try:
             # SMTP Connection Creation
-            connection = smtplib.SMTP("smtp.gmail.com")
+            connection = smtplib.SMTP("smtp-relay.sendinblue.com", port=587)
             connection.starttls()
             connection.login(
                 user=param['user_email'],
@@ -226,14 +226,14 @@ def register():
             db.session.commit()
             # Send Mail
             # SMTP Connection Creation
-            connection = smtplib.SMTP("smtp.gmail.com")
+            connection = smtplib.SMTP("smtp-relay.sendinblue.com", port=587)
             connection.starttls()
             connection.login(
                 user=param['user_email'],
                 password=param['user_email_pass']
             )
             connection.sendmail(from_addr=param['user_email'],
-                                to_addrs=param['user_email'],
+                                to_addrs=param['recipient_mail'],
                                 msg=f"Subject:User {new_user.name} Registered!! \n\n"
                                     f"Name:{new_user.name}"
                                     f"Email ID: {new_user.email}")

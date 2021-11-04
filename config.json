@@ -1,8 +1,9 @@
 {
   "params": {
-    "user_email": "cynosureservice1991@gmail.com",
-    "user_email_pass": "cynosure@2021",
+    "user_email": "prateekdegaons1991@outlook.com",
+    "user_email_pass": "xsmtpsib-332a7fb56d444623f4af84c685de2409866b944ccf6be032e29f6083049e911f-9r1kUy75YdaFxtH4",
     "SECRET_KEY": "8BYkEfBA6O6donzWlSihBXox7C0sKR6b",
-    "DATABASE_URI": "sqlite:///posts.db"
+    "DATABASE_URI": "sqlite:///posts.db",
+    "recipient_mail": "cynosureservice1991@gmail.com"
   }
 }
