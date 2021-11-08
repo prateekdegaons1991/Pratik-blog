@@ -103,18 +103,20 @@ class Comment(db.Model):
 
 
 @app.route('/')
-@login_required
 def get_all_posts():
     return render_template("index.html", all_posts=BlogPost.query.order_by(BlogPost.date),
                            date=datetime.date.today().year)
 
 
 @app.route("/post/<int:index>", methods=['POST', 'GET'])
-@login_required
+# @login_required
 def show_post(index):
     form = CommentsForm()
     requested_post = BlogPost.query.get(index)
     if form.validate_on_submit():
+        if not current_user.is_authenticated:
+            flash("You need to log in or register to comment.")
+            return redirect(url_for('login'))
         new_comment = Comment(
             text=form.comment.data,
             comment_author=current_user,
