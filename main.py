@@ -274,6 +274,13 @@ def thank_you():
     return render_template("thankyou.html", date=datetime.date.today().year)
 
 
+@app.route('/allUsers/')
+@login_required
+@admin_only
+def all_users():
+    return render_template("users_list.html", all_user=User.query.order_by(User.id), date=datetime.date.today().year)
+
+
 @app.route("/logout")
 @login_required
 def logout():
