@@ -20,7 +20,7 @@ with open("config.json") as c:
 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
+app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", param["SECRET_KEY"])
 ckeditor = CKEditor(app)
 Bootstrap(app)
 
@@ -99,7 +99,7 @@ class Comment(db.Model):
 
 
 # Create all the tables in the database
-db.create_all()
+# db.create_all()
 
 
 @app.route('/')
