@@ -128,7 +128,7 @@ def show_post(index):
 
 
 @app.route('/create_post', methods=['POST', 'GET'])
-# @admin_only
+@login_required
 def create_new_post():
     form = CreatePostForm()
     if form.validate_on_submit():
