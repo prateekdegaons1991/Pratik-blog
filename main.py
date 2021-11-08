@@ -13,15 +13,14 @@ import datetime
 from forms import RegisterForm, CreatePostForm, Login, CommentsForm
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 import json
-
-import json
+import  os
 
 with open("config.json") as c:
     param = json.load(c)["params"]
 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = param['SECRET_KEY']
+app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY")
 ckeditor = CKEditor(app)
 Bootstrap(app)
 
@@ -51,7 +50,7 @@ def load_user(user_id):
 
 
 # CONNECT TO DB
-app.config['SQLALCHEMY_DATABASE_URI'] = param['DATABASE_URI']
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL", param["DATABASE_URI"])
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
